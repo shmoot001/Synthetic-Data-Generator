@@ -1,0 +1,22 @@
+server:
+  port: 8080
+
+spring:
+  main:
+    web-application-type: reactive
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          secret: supersecretjwtkey1234567890123456  # exakt som i JwtUtil.java
+
+  cloud:
+    gateway:
+      routes:
+        - id: test-api
+          uri: http://test-api:5000
+          predicates:
+            - Path=/api/test/**
+          filters:
+            - StripPrefix=1

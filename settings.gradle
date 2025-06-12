@@ -1,0 +1,4 @@
+rootProject.name = 'sdg'
+
+include 'api-gateway'
+include 'auth-service'
