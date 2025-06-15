@@ -1,8 +1,13 @@
-package com.example.auth_service.model;
+package com.example.auth_service.dto;
 
 public class UserDTO {
     private String username;
     private String password;
+    private String role;
+
+    // Role can be added 
+
+
 
     public String getUsername() {
         return username;
@@ -18,6 +23,13 @@ public class UserDTO {
 
     public void setPassword(String password) {
         this.password = password;
+    }
+
+    public String getRole() {
+        return role;
+    }
+    public void setRole(String role) {
+        this.role = role;
     }
 
 }

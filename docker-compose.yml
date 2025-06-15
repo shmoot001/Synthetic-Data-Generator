@@ -5,13 +5,32 @@ services:
     build: ./api-gateway
     ports:
       - "8080:8080"
+  mongo:
+    image: mongo:6
+    container_name: mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
 
   auth-service:
-    build: ./auth-service
+    build:
+      context: ./auth-service
     ports:
       - "8081:8081"
+    environment:
+      SPRING_DATA_MONGODB_URI: mongodb://mongo:27017/authdb
+    depends_on:
+      - mongo
 
   test-api:
     build: ./test-api
-    ports:
-      - "5000:5000"
+    container_name: test-api
+    # Ta bort eller kommentera ut denna rad:
+    # ports:
+    #   - "5000:5000"
+
+
+volumes:
+  mongo-data:
+  
