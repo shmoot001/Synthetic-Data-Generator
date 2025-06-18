@@ -1,2 +1,3 @@
 # .gitignore
 test-api/myvenv/
+data-generator-server/myvenv/
