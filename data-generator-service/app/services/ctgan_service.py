@@ -8,6 +8,7 @@ class CTGANService:
         # Initialize a CTGAN model and training state
         self.model = CTGAN()
         self.trained = False
+        self.last_training_data = None
 
     def configure(self, **kwargs):
         # Configure the CTGAN model with custom parameters
@@ -17,6 +18,33 @@ class CTGANService:
         # Train the CTGAN model on the given DataFrame
         self.model.fit(data)
         self.trained = True
+        self.last_training_data = data 
+
+    def generate_with_evaluation(self, num_rows: int, eval_collection=None) -> dict:
+        if not self.trained or self.last_training_data is None:
+            raise Exception("Model not trained or no training data available.")
+
+        synthetic_data = self.model.sample(num_rows)
+
+        from sdmetrics.single_table import QualityReport
+        report = QualityReport()
+        report.generate(self.last_training_data, synthetic_data)
+
+        results = report.get_results()
+
+        # Spara till MongoDB om collection är angiven
+        if eval_collection:
+            self.save_evaluation_report(results, eval_collection, metadata={
+                "model": "CTGAN",
+                "rows_generated": num_rows
+            })
+
+        return {
+            "synthetic_data": synthetic_data,
+            "evaluation": results
+        }
+
+
 
     def generate(self, num_rows: int) -> pd.DataFrame:
         # Generate synthetic data using the trained model
@@ -47,6 +75,16 @@ class CTGANService:
         if not self.trained:
             raise Exception("Model not trained yet.")
         return self.model.sample(num_rows)
+
+    def save_evaluation_report(self, evaluation_result: dict, collection, metadata: dict = None):
+        report_doc = {
+            "timestamp": datetime.now().isoformat(),
+            "evaluation": evaluation_result,
+        }
+        if metadata:
+            report_doc.update(metadata)
+        collection.insert_one(report_doc)
+
 
     def save_to_mongodb(self, data: pd.DataFrame, collection):
         # Save generated data to a MongoDB collection

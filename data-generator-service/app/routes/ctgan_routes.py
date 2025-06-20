@@ -1,20 +1,32 @@
 import tempfile
 import os
 import pandas as pd
-from fastapi import APIRouter, File, UploadFile, HTTPException, Body
+from fastapi import APIRouter, File, UploadFile, HTTPException, Body, Query
 from pydantic import BaseModel
 from app.services.ctgan_service import CTGANService
 from app.db.mongodb import get_mongo_collection
 from app.models.request_models import TrainRequest, GenerateRequest, EvaluateRequest, ExportRequest
 from io import StringIO
 from typing import List
-
-
+from datetime import datetime
 
 
 router = APIRouter()
 ctgan_service = CTGANService()
 
+@router.post("/generate-with-eval")
+def generate_data_with_evaluation(request: GenerateRequest):
+    try:
+        eval_collection = get_mongo_collection(db_name="synthetic_data", collection_name="evaluation_reports")
+        result = ctgan_service.generate_with_evaluation(request.num_rows, eval_collection)
+        data = result["synthetic_data"].to_dict(orient="records")
+        evaluation = result["evaluation"]
+        return {
+            "synthetic_data": data,
+            "evaluation": evaluation
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 # Train the model using raw JSON data (sent in request body)
 @router.post("/train")
@@ -111,6 +123,54 @@ def load_model(path: str = Body(..., embed=True)):
         return {"message": f"Model loaded from {path}"}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+
+
+
+@router.get("/evaluations")
+def list_evaluation_reports(
+    model: str = Query(None),
+    min_score: float = Query(None),
+    from_date: str = Query(None),
+    to_date: str = Query(None)
+):
+    try:
+        collection = get_mongo_collection(db_name="synthetic_data", collection_name="evaluation_reports")
+        
+        query = {}
+
+        # Filtrera på modelltyp
+        if model:
+            query["model"] = model
+
+        # Filtrera på datumintervall
+        if from_date or to_date:
+            date_filter = {}
+            if from_date:
+                date_filter["$gte"] = from_date
+            if to_date:
+                date_filter["$lte"] = to_date
+            query["timestamp"] = date_filter
+
+        # Hämta resultat från MongoDB
+        reports = list(collection.find(query, {"_id": 0}))
+
+        # Filtrera på minsta score i Python (eftersom score ligger inuti evaluation dict)
+        if min_score is not None:
+            def pass_threshold(report):
+                evaluation = report.get("evaluation", {})
+                scores = []
+                for val in evaluation.values():
+                    if isinstance(val, dict) and "Score" in val:
+                        scores.append(val["Score"])
+                return any(score >= min_score for score in scores)
+
+            reports = list(filter(pass_threshold, reports))
+
+        return {"reports": reports}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 # Export synthetic data to CSV or JSON, return file path
 @router.post("/export")
