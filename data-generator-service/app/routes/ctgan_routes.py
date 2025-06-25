@@ -125,8 +125,6 @@ def load_model(path: str = Body(..., embed=True)):
         raise HTTPException(status_code=400, detail=str(e))
 
 
-
-
 @router.get("/evaluations")
 def list_evaluation_reports(
     model: str = Query(None),

@@ -1,0 +1,289 @@
+### 1. **`POST /train` – Train model from JSON data**
+
+Trains the CTGAN model using structured tabular data provided in the request body. This is useful when you want to programmatically send data from your own application or frontend.
+
+**Request Body**:
+
+```json
+{
+  "data": [
+    {"age": 45, "diagnosis": "A", "cost": 1200},
+    {"age": 52, "diagnosis": "B", "cost": 1400}
+  ]
+}
+```
+
+**Response**:
+
+```json
+{
+  "message": "Model trained successfully"
+}
+```
+
+**Note**: Make sure all non-numeric columns are interpreted as categorical in the backend.
+
+---
+
+### 2. **`POST /train-file` – Train model from file upload**
+
+Allows training the model using an uploaded `.csv` or `.json` file containing tabular data. This is helpful when you have a dataset saved locally and want to use it for training.
+
+**Request**: `multipart/form-data` with a file field
+
+**Response**:
+
+```json
+{
+  "message": "Model trained on 1000 rows from file patients.csv"
+}
+```
+
+**Note**: Ensure the file format matches expectations (column names, types). Lists must be flattened (e.g., disease lists into comma-separated strings).
+
+---
+
+### 3. **`POST /generate` – Generate synthetic data**
+
+Generates synthetic tabular data based on the trained model. This does not include any evaluation metrics and is meant for basic generation purposes.
+
+**Request Body**:
+
+```json
+{
+  "num_rows": 10
+}
+```
+
+**Response**:
+
+```json
+[
+  {"age": 44, "diagnosis": "A", "cost": 1320},
+  ...
+]
+```
+
+**Use case**: When you want to quickly produce fake but realistic data.
+
+---
+
+### 4. **`POST /generate-with-eval` – Generate and evaluate synthetic data**
+
+Generates synthetic data **and** evaluates its similarity to the original training dataset using `SDMetrics`. The results are saved in MongoDB.
+
+**Request Body**:
+
+```json
+{
+  "num_rows": 10
+}
+```
+
+**Response**:
+
+```json
+{
+  "synthetic_data": [{...}],
+  "evaluation": {
+    "Column Shapes": {"Score": 0.97},
+    "Column Pair Trends": {"Score": 0.89}
+  }
+}
+```
+
+**Use case**: To verify how realistic and reliable the generated data is.
+
+---
+
+### 5. **`GET /preview` – Preview generated samples**
+
+Returns a quick preview (default 5 rows) of synthetic data from the trained model.
+
+**Query Parameter**: `num_rows=5`
+
+**Response**:
+
+```json
+[
+  {"age": 42, "diagnosis": "C", "cost": 900},
+  ...
+]
+```
+
+**Use case**: Ideal for UI display, debugging, or checking sample structure.
+
+---
+
+### 6. **`POST /evaluate` – Evaluate custom synthetic data**
+
+Compares two datasets: real and synthetic, and calculates statistical similarity scores using SDMetrics.
+
+**Request Body**:
+
+```json
+{
+  "real_data": [{"age": 45, "diagnosis": "A", "cost": 1200}],
+  "synthetic_data": [{"age": 43, "diagnosis": "B", "cost": 1300}]
+}
+```
+
+**Response**:
+
+```json
+{
+  "Column Shapes": {"Score": 0.93},
+  "Column Pair Trends": {"Score": 0.87}
+}
+```
+
+**Use case**: To manually evaluate third-party generated data or test model quality.
+
+---
+
+### 7. **`GET /metadata` – Get training metadata**
+
+Returns information about the current training session including model type, number of epochs, and timestamp.
+
+**Response**:
+
+```json
+{
+  "trained": true,
+  "num_epochs": 100,
+  "model_type": "CTGAN",
+  "timestamp": "2025-06-25T14:33:22.123Z"
+}
+```
+
+**Use case**: Useful for dashboards, status checks, and logs.
+
+---
+
+### 8. **`POST /save-to-db` – Save generated data to MongoDB**
+
+Generates synthetic data and stores it directly in a predefined MongoDB collection.
+
+**Request Body**:
+
+```json
+{
+  "num_rows": 10
+}
+```
+
+**Response**:
+
+```json
+{
+  "message": "10 rows saved to MongoDB"
+}
+```
+
+**Use case**: Automatically populate a test environment with mock data.
+
+---
+
+### 9. **`POST /save-model` – Persist the trained model**
+
+Saves the currently trained CTGAN model to disk so it can be reused later.
+
+**Request Body**:
+
+```json
+{
+  "path": "models/ctgan_model.pkl"
+}
+```
+
+**Response**:
+
+```json
+{
+  "message": "Model saved to models/ctgan_model.pkl"
+}
+```
+
+**Use case**: Useful in production to checkpoint a model after good training.
+
+---
+
+### 10. **`POST /load-model` – Load a previously saved model**
+
+Loads a CTGAN model from disk into memory so it can be used for generation or evaluation.
+
+**Request Body**:
+
+```json
+{
+  "path": "models/ctgan_model.pkl"
+}
+```
+
+**Response**:
+
+```json
+{
+  "message": "Model loaded from models/ctgan_model.pkl"
+}
+```
+
+**Use case**: Bootstrapping a system with an existing trained model.
+
+---
+
+### 11. **`GET /evaluations` – Fetch evaluation reports**
+
+Queries MongoDB for historical evaluation reports. Allows optional filtering by model type, date range, or score threshold.
+
+**Query Parameters (optional)**:
+
+* `model`: `"CTGAN"`
+* `min_score`: `0.9`
+* `from_date`: `"2025-06-01"`
+* `to_date`: `"2025-06-25"`
+
+**Response**:
+
+```json
+{
+  "reports": [
+    {
+      "timestamp": "2025-06-24T12:22:11.000Z",
+      "evaluation": {"Column Shapes": {"Score": 0.96}},
+      "model": "CTGAN",
+      "rows_generated": 100
+    }
+  ]
+}
+```
+
+**Use case**: For dashboards, audits, or ML monitoring pipelines.
+
+---
+
+### 12. **`POST /export` – Export generated data to file**
+
+Generates synthetic data and exports it to a file (CSV or JSON), returning the path.
+
+**Request Body**:
+
+```json
+{
+  "num_rows": 10,
+  "format": "csv"
+}
+```
+
+**Response**:
+
+```json
+{
+  "message": "Data exported",
+  "path": "/tmp/tmpxyz123.csv"
+}
+```
+
+**Use case**: For download, distribution, or external integration.
+
+

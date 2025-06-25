@@ -1,12 +1,24 @@
-from sdv.tabular import CTGAN
+from ctgan import CTGAN
 import pandas as pd
 from datetime import datetime
 import os
+from dateutil.parser import parse as parse_date
+
+
+
+def try_parse_date(value):
+    try:
+        return parse_date(value)
+    except Exception:
+        return None
 
 class CTGANService:
     def __init__(self):
         # Initialize a CTGAN model and training state
-        self.model = CTGAN()
+        print("Initializing CTGAN model...")
+        batch_size = 5000
+        epochs = 100
+        self.model = CTGAN(batch_size=batch_size, epochs=epochs, verbose=True)
         self.trained = False
         self.last_training_data = None
 
@@ -14,11 +26,42 @@ class CTGANService:
         # Configure the CTGAN model with custom parameters
         self.model = CTGAN(**kwargs)
 
+
+
     def train(self, data: pd.DataFrame):
-        # Train the CTGAN model on the given DataFrame
-        self.model.fit(data)
+        self.validate_data(data)
+
+        categorical_columns = list(data.select_dtypes(include=["object", "category"]).columns)
+
+        self.model.fit(data, discrete_columns=categorical_columns)
         self.trained = True
-        self.last_training_data = data 
+        self.last_training_data = data.copy()
+
+    def validate_data(self, data: pd.DataFrame) -> bool:
+        if data.empty:
+            raise ValueError("Training data is empty.")
+        
+        if data.isnull().values.any():
+            print("Missing values detected. Dropping rows with nulls.")
+            data.dropna(inplace=True)
+
+        for col in data.columns:
+            if data[col].dtype == object:
+                sample = data[col].dropna().astype(str).iloc[0]
+                parsed = try_parse_date(sample)
+                if parsed:
+                    try:
+                        data[col] = pd.to_datetime(data[col], format="%Y-%m-%d", errors="raise")
+                        data[col] = (data[col] - data[col].min()).dt.days
+                        print(f"✅ Tolkat '{col}' som datum (YYYY-MM-DD).")
+                    except Exception:
+                        # Fall back till flexibel parsing
+                        data[col] = pd.to_datetime(data[col], errors="coerce")
+                        data[col] = (data[col] - data[col].min()).dt.days
+                        print(f"⚠️ Tolkat '{col}' som datum med ospecifierat format.")
+
+
+        return True
 
     def generate_with_evaluation(self, num_rows: int, eval_collection=None) -> dict:
         if not self.trained or self.last_training_data is None:
@@ -43,8 +86,6 @@ class CTGANService:
             "synthetic_data": synthetic_data,
             "evaluation": results
         }
-
-
 
     def generate(self, num_rows: int) -> pd.DataFrame:
         # Generate synthetic data using the trained model
@@ -85,7 +126,6 @@ class CTGANService:
             report_doc.update(metadata)
         collection.insert_one(report_doc)
 
-
     def save_to_mongodb(self, data: pd.DataFrame, collection):
         # Save generated data to a MongoDB collection
         records = data.to_dict(orient='records')
@@ -103,14 +143,6 @@ class CTGANService:
     def export_to_json(self, data: pd.DataFrame, file_path: str):
         # Export synthetic data to a JSON file
         data.to_json(file_path, orient='records', lines=True)
-
-    def validate_data(self, data: pd.DataFrame) -> bool:
-        # Validate input data before training (check for nulls or emptiness)
-        if data.isnull().values.any():
-            raise ValueError("Training data contains missing values.")
-        if data.empty:
-            raise ValueError("Training data is empty.")
-        return True
 
     def get_training_metadata(self) -> dict:
         # Return metadata about the current training session
