@@ -49,3 +49,21 @@ services:
       - mongo
     volumes:
       - ./data-generator-service:/app
+  
+  redis:
+    image: redis:7
+    container_name: redis
+    ports:
+      - "6379:6379"
+
+  celery-worker:
+    build:
+      context: ./data-generator-service
+    command: celery -A celery_app.celery_app worker --loglevel=info --concurrency=4
+    depends_on:
+      - redis
+      - data-generator-service
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+    volumes:
+      - ./data-generator-service:/app

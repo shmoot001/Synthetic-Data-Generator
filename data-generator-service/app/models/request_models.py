@@ -3,6 +3,7 @@ from typing import List
 
 class TrainRequest(BaseModel):
     data: List[dict]
+    config: Optional[Dict[str, int]] = None # e.g., {"batch_size": 1000, "epochs": 50}
 
 class GenerateRequest(BaseModel):
     num_rows: int

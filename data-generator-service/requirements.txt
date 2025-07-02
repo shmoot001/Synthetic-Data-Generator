@@ -7,3 +7,5 @@ scikit-learn
 ctgan
 python-multipart
 psutil
+celery[redis]
+redis
