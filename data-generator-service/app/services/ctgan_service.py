@@ -3,65 +3,33 @@ import pandas as pd
 from datetime import datetime
 import os
 from dateutil.parser import parse as parse_date
+from app.services.data_preprocessor import DataPreprocessor
 
-
-
-def try_parse_date(value):
-    try:
-        return parse_date(value)
-    except Exception:
-        return None
 
 class CTGANService:
     def __init__(self):
-        # Initialize a CTGAN model and training state
-        print("Initializing CTGAN model...")
-        batch_size = 5000
-        epochs = 100
-        self.model = CTGAN(batch_size=batch_size, epochs=epochs, verbose=True)
+        print("🔧 Initializing CTGAN model...")
+        self.model = CTGAN(batch_size=5000, epochs=100, verbose=True)
         self.trained = False
         self.last_training_data = None
+        self.preprocessor = DataPreprocessor(min_rows=100)
 
     def configure(self, **kwargs):
-        # Configure the CTGAN model with custom parameters
+        """Reconfigures the CTGAN model with custom parameters."""
         self.model = CTGAN(**kwargs)
 
-
-
     def train(self, data: pd.DataFrame):
-        self.validate_data(data)
+        """Validates, cleans and trains the CTGAN model on the input data."""
+        self.preprocessor.validate(data)
+        clean_data = self.preprocessor.clean(data)
+        categorical_columns = self.preprocessor.get_categorical_columns(clean_data)
 
-        categorical_columns = list(data.select_dtypes(include=["object", "category"]).columns)
-
-        self.model.fit(data, discrete_columns=categorical_columns)
+        self.model.fit(clean_data, discrete_columns=categorical_columns)
         self.trained = True
-        self.last_training_data = data.copy()
+        self.last_training_data = clean_data.copy()
+        self.log_training(f"CTGAN trained on {len(clean_data)} rows and {len(clean_data.columns)} columns.")
+        print(" CTGAN training completed successfully.")
 
-    def validate_data(self, data: pd.DataFrame) -> bool:
-        if data.empty:
-            raise ValueError("Training data is empty.")
-        
-        if data.isnull().values.any():
-            print("Missing values detected. Dropping rows with nulls.")
-            data.dropna(inplace=True)
-
-        for col in data.columns:
-            if data[col].dtype == object:
-                sample = data[col].dropna().astype(str).iloc[0]
-                parsed = try_parse_date(sample)
-                if parsed:
-                    try:
-                        data[col] = pd.to_datetime(data[col], format="%Y-%m-%d", errors="raise")
-                        data[col] = (data[col] - data[col].min()).dt.days
-                        print(f"✅ Tolkat '{col}' som datum (YYYY-MM-DD).")
-                    except Exception:
-                        # Fall back till flexibel parsing
-                        data[col] = pd.to_datetime(data[col], errors="coerce")
-                        data[col] = (data[col] - data[col].min()).dt.days
-                        print(f"⚠️ Tolkat '{col}' som datum med ospecifierat format.")
-
-
-        return True
 
     def generate_with_evaluation(self, num_rows: int, eval_collection=None) -> dict:
         if not self.trained or self.last_training_data is None:
@@ -131,8 +99,9 @@ class CTGANService:
         records = data.to_dict(orient='records')
         collection.insert_many(records)
 
-    def log_training(self, message: str, log_path: str = "training.log"):
+    def log_training(self, message: str, log_path: str = "logs/training.log"):
         # Log training messages to a file with a timestamp
+        os.makedirs(os.path.dirname(log_path), exist_ok=True)
         with open(log_path, "a") as f:
             f.write(f"{datetime.now()} - {message}\n")
 

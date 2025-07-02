@@ -9,7 +9,10 @@ from app.models.request_models import TrainRequest, GenerateRequest, EvaluateReq
 from io import StringIO
 from typing import List
 from datetime import datetime
-
+from time import time
+from tasks.train_tasks import train_ctgan_model
+from celery.result import AsyncResult
+from celery_app import celery_app
 
 router = APIRouter()
 ctgan_service = CTGANService()
@@ -29,13 +32,22 @@ def generate_data_with_evaluation(request: GenerateRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 # Train the model using raw JSON data (sent in request body)
-@router.post("/train")
+@router.post(
+    "/train",
+    summary="Train CTGAN with optional custom config",
+    description="Trains the CTGAN model using JSON data and optional configuration like batch_size and epochs.",
+    tags=["Training"]
+)
 def train_model(request: TrainRequest):
     try:
         df = pd.DataFrame(request.data)
-        ctgan_service.validate_data(df)  # Ensure input data is valid
+        
+        # If config is passed, reconfigure model
+        if request.config:
+            ctgan_service.configure(**request.config)
+
         ctgan_service.train(df)          # Train CTGAN on the data
-        return {"message": "Model trained successfully"}
+        return {"message": "Model trained successfully", "config_used": request.config or "default"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -50,24 +62,79 @@ def generate_data(request: GenerateRequest):
 
 # Train the model from an uploaded file (.csv or .json)
 @router.post("/train-file")
-async def train_from_file(file: UploadFile = File(...)):
+async def train_from_file(
+    file: UploadFile = File(...),
+    batch_size: int = Query(None),
+    epochs: int = Query(10),
+    model_path: str = Query(...),
+    sample_rows: int = Query(None)
+):
     try:
         contents = await file.read()
-        decoded = contents.decode("utf-8")
+        df = pd.read_csv(StringIO(contents.decode("utf-8")))
 
-        # Read file based on extension
-        if file.filename.endswith(".csv"):
-            df = pd.read_csv(StringIO(decoded))
-        elif file.filename.endswith(".json"):
-            df = pd.read_json(StringIO(decoded))
-        else:
-            raise HTTPException(status_code=400, detail="Only .csv or .json files are supported")
+        if sample_rows and df.shape[0] > sample_rows:
+            df = df.sample(n=sample_rows, random_state=42)
 
-        ctgan_service.validate_data(df)
+        if not batch_size:
+            if df.shape[0] > 100_000:
+                batch_size = 10000
+            elif df.shape[0] > 50000:
+                batch_size = 5000
+            else:
+                batch_size = 1000
+
+        ctgan_service.configure(batch_size=batch_size, epochs=epochs, verbose=True)
+
+        start = time()
         ctgan_service.train(df)
-        return {"message": f"Model trained on {len(df)} rows from file {file.filename}"}
+        ctgan_service.save_model(model_path)
+        duration = round(time() - start, 2)
+
+        return {
+            "message": f"Model trained and saved successfully",
+            "rows_trained": len(df),
+            "batch_size": batch_size,
+            "epochs": epochs,
+            "time_taken_seconds": duration,
+            "model_path": model_path
+        }
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/train-file-celery")
+async def train_file_with_celery(
+    file: UploadFile = File(...),
+    batch_size: int = Query(None),
+    epochs: int = Query(10),
+    model_path: str = Query(...),
+    sample_rows: int = Query(None),
+    verbose: bool = Query(True)
+):
+    try:
+        contents = await file.read()
+        df = pd.read_csv(StringIO(contents.decode("utf-8")))
+
+        if sample_rows and df.shape[0] > sample_rows:
+            df = df.sample(n=sample_rows)
+
+        if not batch_size:
+            if df.shape[0] > 100_000:
+                batch_size = 10000
+            elif df.shape[0] > 50000:
+                batch_size = 5000
+            else:
+                batch_size = 1000
+
+        config = {"batch_size": batch_size, "epochs": epochs, "verbose": verbose}
+
+        task = train_ctgan_model.delay({"rows": df.to_dict(orient="records")}, config, model_path)
+
+        return {"message": "Training task submitted", "task_id": task.id}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 # Preview a few synthetic samples from the trained model
 @router.get("/preview")
@@ -186,3 +253,13 @@ def export_data(request: ExportRequest):
             return {"message": "Data exported", "path": tmp.name}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+        
+@router.get("/task-status/{task_id}")
+def get_task_status(task_id: str):
+    result = AsyncResult(task_id, app=celery_app)
+    return {
+        "task_id": task_id,
+        "state": result.state,
+        "info": result.result
+    }
