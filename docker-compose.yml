@@ -1,16 +1,7 @@
 version: '3.8'
 
 services:
-  # API Gateway (ex. Spring Cloud Gateway)
-  api-gateway:
-    build: ./api-gateway
-    ports:
-      - "8080:8080"
-    depends_on:
-      - auth-service
-      - data-generator-service
 
-  # Gemensam MongoDB för alla tjänster
   mongo:
     image: mongo:6
     container_name: mongo
@@ -19,37 +10,18 @@ services:
     volumes:
       - mongo-data:/data/db
 
-  # Auth-service (t.ex. Spring Boot)
-  auth-service:
-    build:
-      context: ./auth-service
-    ports:
-      - "8081:8081"
-    environment:
-      SPRING_DATA_MONGODB_URI: mongodb://mongo:27017/authdb
-    depends_on:
-      - mongo
-
-  # Test-API (t.ex. testtjänst eller mockservice)
-  test-api:
-    build: ./test-api
-    container_name: test-api
-    # Kom ihåg att aktivera denna rad om du vill testa tjänsten från host:
-    # ports:
-    #   - "5000:5000"
-
   data-generator-service:
     build:
       context: ./data-generator-service
     ports:
-      - "8000:8000"  # FastAPI exposed here
+      - "8000:8000"
     environment:
       MONGO_URI: mongodb://mongo:27017/synthetic_data
     depends_on:
       - mongo
     volumes:
       - ./data-generator-service:/app
-  
+
   redis:
     image: redis:7
     container_name: redis
@@ -59,7 +31,7 @@ services:
   celery-worker:
     build:
       context: ./data-generator-service
-    command: celery -A celery_app.celery_app worker --loglevel=info --concurrency=4
+    command: celery -A app.celery_app worker --loglevel=info --concurrency=4
     depends_on:
       - redis
       - data-generator-service
@@ -67,3 +39,6 @@ services:
       - REDIS_URL=redis://redis:6379/0
     volumes:
       - ./data-generator-service:/app
+
+volumes:
+  mongo-data:
