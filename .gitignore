@@ -1,3 +1,14 @@
 # .gitignore
 test-api/myvenv/
 data-generator-service/myvenv/
+data-generator-service/app/trained_models/
+ctgan-data-generator-service/myvenv/
+ctgan-data-generator-service/app/trained_models/
+tvae-data-generator-service/myvenv/
+tvae-data-generator-service/app/trained_models/
+gpt2-data-generator-service/myvenv/
+gpt2-data-generator-service/app/trained_models/
+gaussianCopula-data-generator-service/myvenv/
+gaussianCopula-data-generator-service/app/trained_models/
+*.safetensors
+*.pkl

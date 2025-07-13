@@ -1,0 +1,21 @@
+2025-07-03 18:47:18.001278 - CTGAN trained on 999 rows and 15 columns.
+2025-07-03 18:52:12.548222 - CTGAN trained on 999 rows and 15 columns.
+2025-07-03 19:21:25.902435 - CTGAN trained on 999 rows and 15 columns.
+2025-07-03 19:24:22.056364 - CTGAN trained on 999 rows and 15 columns.
+2025-07-03 20:30:27.855685 - ❌ Training failed: name 'data_dict' is not defined
+2025-07-03 20:36:33.293204 - CTGAN trained on 999 rows and 15 columns.
+2025-07-03 20:36:33.317504 - ❌ Training failed: expected 'f' to be string, path, or a file-like object with a 'write' attribute
+2025-07-04 21:16:02.399652 - CTGAN trained on 999 rows and 15 columns.
+2025-07-04 21:16:02.427162 - ❌ Training failed: expected 'f' to be string, path, or a file-like object with a 'write' attribute
+2025-07-06 12:55:47.072905 - CTGAN trained on 999 rows and 15 columns.
+2025-07-06 12:57:14.052661 - CTGAN trained on 999 rows and 15 columns.
+2025-07-06 12:57:14.078067 - ❌ Training failed: expected 'f' to be string, path, or a file-like object with a 'write' attribute
+2025-07-06 13:01:23.318753 - CTGAN trained on 999 rows and 15 columns.
+2025-07-06 13:01:23.339828 - ❌ Training failed: expected 'f' to be string, path, or a file-like object with a 'write' attribute
+2025-07-06 13:10:03.248999 - CTGAN trained on 999 rows and 15 columns.
+2025-07-06 13:10:03.308353 - ❌ Training failed: expected 'f' to be string, path, or a file-like object with a 'write' attribute
+2025-07-06 13:13:35.807830 - CTGAN trained on 999 rows and 15 columns.
+2025-07-06 13:13:35.884437 - ❌ Training failed: argument should be a str or an os.PathLike object where __fspath__ returns a str, not 'dict'
+2025-07-06 13:17:55.693599 - CTGAN trained on 999 rows and 15 columns.
+2025-07-06 13:23:16.038239 - CTGAN trained on 999 rows and 15 columns.
+2025-07-06 13:30:59.541301 - CTGAN trained on 999 rows and 15 columns.

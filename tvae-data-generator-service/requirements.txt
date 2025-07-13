@@ -1,0 +1,12 @@
+fastapi
+uvicorn
+pydantic
+sdv>=1.0.0
+ctgan
+pandas
+scikit-learn
+python-multipart
+psutil
+celery[redis]
+redis
+pymongo
