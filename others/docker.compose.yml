@@ -1,0 +1,80 @@
+version: '3.8'
+
+services:
+
+  mongo:
+    image: mongo:6
+    container_name: mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+
+  ctgan-data-generator-service:
+    build:
+      context: ./ctgan-data-generator-service
+    ports:
+      - "8000:8000"
+    environment:
+      MONGO_URI: mongodb://mongo:27017/synthetic_data
+    depends_on:
+      - mongo
+    volumes:
+      - ./ctgan-data-generator-service:/app
+
+  gaussiancopula-data-generator-service:
+    build:
+      context: ./gaussianCopula-data-generator-service
+    ports:
+      - "8001:8001"
+    environment:
+      MONGO_URI: mongodb://mongo:27017/synthetic_data
+    depends_on:
+      - mongo
+    volumes:
+      - ./gaussianCopula-data-generator-service:/app
+
+  tvae-data-generator-service:
+    build:
+      context: ./tvae-data-generator-service
+    ports:
+      - "8002:8002"
+    environment:
+      MONGO_URI: mongodb://mongo:27017/synthetic_data
+    depends_on:
+      - mongo
+    volumes:
+      - ./tvae-data-generator-service:/app
+
+  gpt2-data-generator-service:
+    build:
+      context: ./gpt2-data-generator-service
+    ports:
+      - "8003:8003"
+    environment:
+      MONGO_URI: mongodb://mongo:27017/synthetic_data
+    depends_on:
+      - mongo
+    volumes:
+      - ./gpt2-data-generator-service:/app
+
+  redis:
+    image: redis:7
+    container_name: redis
+    ports:
+      - "6379:6379"
+
+  celery-worker:
+    build:
+      context: ./ctgan-data-generator-service
+    command: celery -A app.celery_app worker --loglevel=info --concurrency=4
+    depends_on:
+      - redis
+      - ctgan-data-generator-service
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+    volumes:
+      - ./ctgan-data-generator-service:/app
+
+volumes:
+  mongo-data:

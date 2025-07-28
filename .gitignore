@@ -12,3 +12,4 @@ gaussianCopula-data-generator-service/myvenv/
 gaussianCopula-data-generator-service/app/trained_models/
 *.safetensors
 *.pkl
+**/__pycache__/

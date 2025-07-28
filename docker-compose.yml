@@ -1,7 +1,20 @@
 version: '3.8'
 
 services:
+  # API Gateway (ex. Spring Cloud Gateway)
+  api-gateway:
+    container_name: api-gateway
+    build: ./api-gateway
+    ports:
+      - "8080:8080"
+    depends_on:
+      - auth-service
+    networks:
+      - backend
+    environment:
+      - AUTH_SERVICE_URL=http://auth-service:8081
 
+  # Gemensam MongoDB för alla tjänster
   mongo:
     image: mongo:6
     container_name: mongo
@@ -9,36 +22,37 @@ services:
       - "27017:27017"
     volumes:
       - mongo-data:/data/db
+    networks:
+      - backend
 
-  data-generator-service:
+  # Auth-service (t.ex. Spring Boot)
+  auth-service:
+    container_name: auth-service
     build:
-      context: ./data-generator-service
+      context: ./auth-service
     ports:
-      - "8000:8000"
+      - "8081:8081"
     environment:
-      MONGO_URI: mongodb://mongo:27017/synthetic_data
+      - SPRING_DATA_MONGODB_URI=mongodb://mongo:27017/authdb
     depends_on:
       - mongo
-    volumes:
-      - ./data-generator-service:/app
+    networks:
+      - backend
 
-  redis:
-    image: redis:7
-    container_name: redis
-    ports:
-      - "6379:6379"
-
-  celery-worker:
+  # Adminportal (React + Vite)
+  adminportal:
+    container_name: adminportal
     build:
-      context: ./data-generator-service
-    command: celery -A app.celery_app worker --loglevel=info --concurrency=4
-    depends_on:
-      - redis
-      - data-generator-service
-    environment:
-      - REDIS_URL=redis://redis:6379/0
-    volumes:
-      - ./data-generator-service:/app
+      context: ./adminportal
+      dockerfile: Dockerfile
+    ports:
+      - "5173:5173"
+    networks:
+      - backend
 
 volumes:
   mongo-data:
+
+networks:
+  backend:
+    driver: bridge

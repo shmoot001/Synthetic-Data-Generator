@@ -2,6 +2,6 @@ fastapi
 uvicorn
 pydantic
 pandas
-sdv==1.8.0
+sdv
 pymongo
 python-multipart

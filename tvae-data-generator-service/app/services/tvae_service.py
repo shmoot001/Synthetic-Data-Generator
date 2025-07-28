@@ -1,4 +1,5 @@
-from sdv.tabular import TVAE
+from sdv.single_table import TVAESynthesizer
+from sdv.metadata import SingleTableMetadata
 import pandas as pd
 from datetime import datetime
 import os
@@ -9,15 +10,18 @@ from pathlib import Path
 
 class TVAEService:
     def __init__(self):
-        print("🔧 Initializing TVAE model...")
-        self.model = TVAE(epochs=100, verbose=True)
+        print("🔧 TVAEService initialized (model created during training)...")
         self.trained = False
         self.last_training_data = None
+        self.metadata = None
+        self.model = None
         self.preprocessor = DataPreprocessor(min_rows=100)
 
     def configure(self, **kwargs):
-        """Reconfigures the TVAE model with custom parameters."""
-        self.model = TVAE(**kwargs)
+        """Reconfigures the TVAE model with custom parameters (metadata required)."""
+        if self.metadata is None:
+            raise Exception("Metadata must be set before configuring the model.")
+        self.model = TVAESynthesizer(metadata=self.metadata, **kwargs)
 
     def train(self, data: pd.DataFrame):
         """Validates, cleans and trains the TVAE model on the input data."""
@@ -25,11 +29,18 @@ class TVAEService:
         clean_data = self.preprocessor.clean(data)
         categorical_columns = self.preprocessor.get_categorical_columns(clean_data)
 
-        self.model.fit(clean_data, discrete_columns=categorical_columns)
+        # 🧠 Skapa metadata från DataFrame
+        self.metadata = SingleTableMetadata()
+        self.metadata.detect_from_dataframe(data=clean_data)
+
+        # 🔧 Skapa och träna modellen
+        self.model = TVAESynthesizer(metadata=self.metadata, epochs=100, verbose=True)
+        self.model.fit(clean_data)
+
         self.trained = True
         self.last_training_data = clean_data.copy()
         self.log_training(f"TVAE trained on {len(clean_data)} rows and {len(clean_data.columns)} columns.")
-        print(" TVAE training completed successfully.")
+        print("✅ TVAE training completed successfully.")
 
     def generate(self, num_rows: int) -> pd.DataFrame:
         if not self.trained:
@@ -44,7 +55,7 @@ class TVAEService:
         self.model.save(str(file_path))
 
     def load_model(self, file_path: str):
-        self.model = TVAE.load(file_path)
+        self.model = TVAESynthesizer.load(file_path)
         self.trained = True
 
     def preview(self, num_rows: int = 5) -> pd.DataFrame:
@@ -75,4 +86,6 @@ class TVAEService:
             "timestamp": datetime.now().isoformat()
         }
 
+
+# Skapa instans av tjänsten
 tvae_service = TVAEService()

@@ -1,4 +1,14 @@
+# ---- Byggfas ----
+FROM gradle:8.5-jdk17 AS builder
+
+WORKDIR /app
+COPY . .
+
+# Hoppar över test
+RUN gradle build -x test --no-daemon
+
+# ---- Körfas ----
 FROM eclipse-temurin:17-jdk
 WORKDIR /app
-COPY build/libs/auth-service-0.0.1-SNAPSHOT.jar app.jar
+COPY --from=builder /app/build/libs/*.jar app.jar
 ENTRYPOINT ["java", "-jar", "app.jar"]

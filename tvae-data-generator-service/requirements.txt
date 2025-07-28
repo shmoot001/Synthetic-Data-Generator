@@ -1,8 +1,7 @@
 fastapi
 uvicorn
 pydantic
-sdv>=1.0.0
-ctgan
+sdv
 pandas
 scikit-learn
 python-multipart
