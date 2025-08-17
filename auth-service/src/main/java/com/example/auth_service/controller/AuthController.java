@@ -58,4 +58,23 @@ public class AuthController {
         userRepository.save(newUser);
         return ResponseEntity.ok("✅ Användare registrerad");
     }
+
+    @GetMapping("/me")
+    public ResponseEntity<?> getCurrentUser(@RequestHeader("Authorization") String token) {
+        System.out.println("🔑 GET /me - token: " + token);
+
+        String username = JwtUtil.extractUsername(token);
+        if (username == null) {
+            return ResponseEntity.status(401).body("❌ Ogiltig token");
+        }
+
+        Optional<User> userOpt = userRepository.findByUsername(username);
+        if (userOpt.isEmpty()) {
+            return ResponseEntity.status(404).body("❌ Användare hittades inte");
+        }
+
+        User user = userOpt.get();
+        return ResponseEntity.ok(user);
+    }
+
 }

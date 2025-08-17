@@ -5,3 +5,5 @@ pandas
 sdv
 pymongo
 python-multipart
+celery[redis]
+redis

@@ -5,6 +5,7 @@ import LoginPage from "./pages/LoginPage";
 import DashboardPage from "./pages/DashboardPage";
 import ProtectedRoute from "./auth/ProtectedRoute";
 import DataGeneratorPage from "./pages/DataGeneratorPage";
+import StartPage from "./pages/StartPage";
 
 function App() {
   return (
@@ -12,7 +13,15 @@ function App() {
       <Routes>
         <Route path="/" element={<LoginPage />} />
         <Route
-          path="/dashboard"
+          path="/start"
+          element={
+            <ProtectedRoute>
+              <StartPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/data-generator"
           element={
             <ProtectedRoute>
               <DataGeneratorPage />

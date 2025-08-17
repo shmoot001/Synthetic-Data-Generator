@@ -11,10 +11,10 @@ from pathlib import Path
 class TVAEService:
     def __init__(self):
         print("🔧 TVAEService initialized (model created during training)...")
+        self.model = None
         self.trained = False
         self.last_training_data = None
         self.metadata = None
-        self.model = None
         self.preprocessor = DataPreprocessor(min_rows=100)
 
     def configure(self, **kwargs):
@@ -23,18 +23,14 @@ class TVAEService:
             raise Exception("Metadata must be set before configuring the model.")
         self.model = TVAESynthesizer(metadata=self.metadata, **kwargs)
 
-    def train(self, data: pd.DataFrame):
+    def train(self, data: pd.DataFrame, epochs=100, batch_size=1000, verbose=True):
         """Validates, cleans and trains the TVAE model on the input data."""
         self.preprocessor.validate(data)
         clean_data = self.preprocessor.clean(data)
-        categorical_columns = self.preprocessor.get_categorical_columns(clean_data)
-
-        # 🧠 Skapa metadata från DataFrame
         self.metadata = SingleTableMetadata()
         self.metadata.detect_from_dataframe(data=clean_data)
 
-        # 🔧 Skapa och träna modellen
-        self.model = TVAESynthesizer(metadata=self.metadata, epochs=100, verbose=True)
+        self.model = TVAESynthesizer(metadata=self.metadata, epochs=epochs, batch_size=batch_size, verbose=verbose)
         self.model.fit(clean_data)
 
         self.trained = True

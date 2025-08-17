@@ -49,6 +49,114 @@ services:
       - "5173:5173"
     networks:
       - backend
+    volumes:
+    - ./adminportal:/app
+
+  # CTGAN Data Generator Service
+  ctgan-data-generator-service:
+    build:
+      context: ./ctgan-data-generator-service
+    ports:
+      - "8000:8000"
+    environment:
+      MONGO_URI: mongodb://mongo:27017/synthetic_data
+    depends_on:
+      - mongo
+    volumes:
+      - ./ctgan-data-generator-service:/app
+    networks:
+      - backend 
+    
+  tvae-data-generator-service:
+      build:
+        context: ./tvae-data-generator-service
+      ports:
+        - "8001:8001"
+      environment:
+        MONGO_URI: mongodb://mongo:27017/synthetic_data
+      depends_on:
+        - mongo
+      volumes:
+        - ./tvae-data-generator-service:/app
+      networks:
+        - backend
+
+  gaussiancopula-data-generator-service:
+    build:
+      context: ./gaussianCopula-data-generator-service
+    ports:
+      - "8002:8002"
+    environment:
+      MONGO_URI: mongodb://mongo:27017/synthetic_data
+    depends_on:
+      - mongo
+    volumes:
+      - ./gaussianCopula-data-generator-service:/app
+    networks:
+      - backend
+
+  gpt2-data-generator-service:
+    build:
+      context: ./gpt2-data-generator-service
+    ports:
+      - "8003:8003"
+    environment:
+      MONGO_URI: mongodb://mongo:27017/synthetic_data
+    depends_on:
+      - mongo
+    volumes:
+      - ./gpt2-data-generator-service:/app
+    networks:
+      - backend
+
+  redis:
+    image: redis:7
+    container_name: redis
+    ports:
+      - "6379:6379"
+    networks:
+      - backend
+  # CTGAN worker
+  celery-worker:
+    build: ./ctgan-data-generator-service
+    command: >
+      sh -lc "python -m celery -A app.celery_app worker --loglevel=info --concurrency=4 -Q ctgan"
+    depends_on: [redis, ctgan-data-generator-service]
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - CTGAN_QUEUE=ctgan
+    volumes:
+      - ./ctgan-data-generator-service:/app
+    networks: [backend]
+
+  # TVAE worker
+  tvae-celery-worker:
+    build: ./tvae-data-generator-service
+    command: >
+      sh -lc "python -m celery -A app.celery_app worker --loglevel=info --concurrency=2 -Q tvae"
+    depends_on: [redis, tvae-data-generator-service]
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - TVAE_QUEUE=tvae
+    volumes:
+      - ./tvae-data-generator-service:/app
+    networks: [backend]
+
+  # Gaussian worker
+  gaussian-celery-worker:
+    build: ./gaussianCopula-data-generator-service
+    command: >
+      sh -lc "python -m celery -A app.celery_app worker --loglevel=info --concurrency=2 -Q gaussian"
+    depends_on: [redis, gaussiancopula-data-generator-service]
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - GAUSSIAN_QUEUE=gaussian
+    volumes:
+      - ./gaussianCopula-data-generator-service:/app
+    networks: [backend]
 
 volumes:
   mongo-data:

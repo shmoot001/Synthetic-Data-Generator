@@ -15,8 +15,8 @@ const FileDropzone = ({ onFilesSelected }) => {
         borderRadius: "8px",
         padding: "40px",
         textAlign: "center",
-        backgroundColor: "#2c2c2c",
-        color: "#fff",
+        backgroundColor: "#ffffff",
+        color: "#396291",
         cursor: "pointer",
       }}
     >
@@ -24,7 +24,7 @@ const FileDropzone = ({ onFilesSelected }) => {
       {isDragActive ? (
         <p>Drop the files here...</p>
       ) : (
-        <p>Click or Drag files to this area to upload</p>
+        <p>Click or Drag a csv or json to this area to upload</p>
       )}
     </div>
   );

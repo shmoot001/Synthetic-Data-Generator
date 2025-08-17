@@ -1,3 +1,5 @@
+import axios from "axios";
+
 export async function login(username, password) {
   const response = await fetch("/api/auth/login", {
     method: "POST",
@@ -10,5 +12,20 @@ export async function login(username, password) {
   }
 
   const token = await response.text(); 
+  localStorage.setItem("token", token);
+
   return token;
 }
+
+
+export const getCurrentUser = async () => {
+  const token = localStorage.getItem("token");
+
+  const res = await axios.get("/api/auth/me", {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  return res.data;
+};

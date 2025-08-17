@@ -10,34 +10,53 @@ import {
   IDSHeader1177ProAvatarMobile,
   IDSLink,
 } from "@inera/ids-react";
+import {getCurrentUser } from "../api/auth";
+import { useState, useEffect } from "react";
+
 
 const Header = () => {
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    getCurrentUser()
+      .then(setUser)
+      .catch(() => {
+        setUser(null); // ev. hantera fel
+      });
+  }, []);
+
+
   return (
     <IDSHeader1177Pro
       avatar={
-        <IDSHeader1177ProAvatar unit="Underrubrik" username="Firstname Lastname">
-          <>
-            <IDSLink block colorPreset={1} large>
-              <a href="large-icon-link">
-                <span className="ids-icon-question ids-icon--text-start" />
-                Hjälp
-              </a>
-            </IDSLink>
-            <IDSLink block colorPreset={1} large>
-              <a href="large-icon-link">
-                <span className="ids-icon-settings ids-icon--text-start" />
-                Inställningar
-              </a>
-            </IDSLink>
-            <hr className="ids-header-1177-pro__link-separator" />
-            <IDSLink block colorPreset={1} large>
-              <a href="large-icon-link">
-                <span className="ids-icon-user ids-icon--text-start" />
-                Logga ut
-              </a>
-            </IDSLink>
-          </>
-        </IDSHeader1177ProAvatar>
+        user && (
+          <IDSHeader1177ProAvatar
+            unit="Admin"
+            username={`${user.username} ${user.role}`}
+          >
+            <>
+              <IDSLink block colorPreset={1} large>
+                <a href="/help">
+                  <span className="ids-icon-question ids-icon--text-start" />
+                  Hjälp
+                </a>
+              </IDSLink>
+              <IDSLink block colorPreset={1} large>
+                <a href="/settings">
+                  <span className="ids-icon-settings ids-icon--text-start" />
+                  Inställningar
+                </a>
+              </IDSLink>
+              <hr className="ids-header-1177-pro__link-separator" />
+              <IDSLink block colorPreset={1} large>
+                <a href="/logout">
+                  <span className="ids-icon-user ids-icon--text-start" />
+                  Logga ut
+                </a>
+              </IDSLink>
+            </>
+          </IDSHeader1177ProAvatar>
+        )
       }
       logoHref="https://www.1177.se/"
       skipToContentLink={<a href="">Skip to main content</a>}
@@ -75,15 +94,15 @@ const Header = () => {
         }
       >
         <IDSHeader1177ProNavItem active>
-          <a href="/dashboard">Dashboard</a>
+          <a href="/start">Dashboard</a>
         </IDSHeader1177ProNavItem>
 
         <IDSHeader1177ProNavItem >
-          <a href="">Skapa testdata</a>
+          <a href="/data-generator">Skapa testdata</a>
         </IDSHeader1177ProNavItem>
 
         <IDSHeader1177ProNavItem>
-            <a href="">ML/AI-modeller</a>
+            <a href="/ml-ai-models">ML/AI-modeller</a>
         </IDSHeader1177ProNavItem>
 
         <IDSHeader1177ProNavItem

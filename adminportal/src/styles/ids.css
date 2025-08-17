@@ -1,1 +1,22 @@
 @import "@inera/ids-design/themes/1177/1177.css";
+/* Global font settings */
+body {
+  font-family: 'Open Sans', sans-serif;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Inter', sans-serif;
+  font-weight: 700; /* Bold */
+  color: #396291;
+}
+
+.ids-heading-s,
+.ids-heading-m,
+.ids-heading-l {
+  font-family: 'Inter', sans-serif;
+  color: #396291;
+}
+
+p, span, input, button, label {
+  font-family: 'Open Sans', sans-serif;
+}

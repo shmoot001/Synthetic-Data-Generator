@@ -9,7 +9,7 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          secret: supersecretjwtkey1234567890123456  # exakt som i JwtUtil.java
+          secret: supersecretjwtkey1234567890123456  
 
   cloud:
     gateway:
@@ -25,5 +25,33 @@ spring:
           uri: http://auth-service:8081
           predicates:
             - Path=/api/auth/**
+          filters:
+            - StripPrefix=1
+            
+        - id: ctgan-data-generator-service
+          uri: http://ctgan-data-generator-service:8000
+          predicates:
+            - Path=/api/ctgan/**
+          filters:
+            - StripPrefix=1
+        
+        - id: tvae-data-generator-service
+          uri: http://tvae-data-generator-service:8001
+          predicates:
+            - Path=/api/tvae/**
+          filters:
+            - StripPrefix=1
+
+        - id: gaussianCopula-data-generator-service
+          uri: http://gaussianCopula-data-generator-service:8002
+          predicates:
+            - Path=/api/gaussian/**
+          filters:
+            - StripPrefix=1
+        
+        - id: gpt2-data-generator-service
+          uri: http://gpt2-data-generator-service:8003
+          predicates:
+            - Path=/api/gpt2/**
           filters:
             - StripPrefix=1

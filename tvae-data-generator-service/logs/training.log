@@ -1,0 +1,6 @@
+2025-08-04 21:30:53.611302 - TVAE trained on 509 rows and 15 columns.
+2025-08-04 21:32:19.898675 - TVAE trained on 509 rows and 15 columns.
+2025-08-04 22:35:10.153648 - TVAE trained on 509 rows and 15 columns.
+2025-08-05 18:21:23.647219 - TVAE trained on 509 rows and 15 columns.
+2025-08-10 22:43:29.045079 - ❌ Training failed: Metadata must be set before configuring the model.
+2025-08-10 22:44:14.019908 - TVAE trained on 509 rows and 15 columns.

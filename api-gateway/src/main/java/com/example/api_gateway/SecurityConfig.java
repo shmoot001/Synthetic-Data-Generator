@@ -47,8 +47,18 @@ public class SecurityConfig {
     private Converter<Jwt, Mono<? extends AbstractAuthenticationToken>> grantedAuthoritiesExtractor() {
         return jwt -> {
             String role = jwt.getClaimAsString("role");
-            var authorities = AuthorityUtils.createAuthorityList(role);
+            System.out.println("🧪 JWT role claim: " + role);
+
+            // 👇 Tar bort "ROLE_" om redan finns, och lägger till det igen korrekt
+            String normalizedRole = role.startsWith("ROLE_")
+                    ? role
+                    : "ROLE_" + role;
+
+            var authorities = AuthorityUtils.createAuthorityList(normalizedRole);
+            System.out.println("🧪 Spring Authorities: " + authorities);
+
             return Mono.just(new JwtAuthenticationToken(jwt, authorities));
         };
     }
+
 }

@@ -15,8 +15,8 @@ const LoginForm = () => {
       localStorage.setItem("jwt", token);
       alert("Login successful");
 
-      // Navigera till dashboard
-      navigate("/dashboard");
+      // Navigera till start
+      navigate("/start");
     } catch (error) {
       alert("Login error: " + error.message);
     }
