@@ -13,3 +13,9 @@ gaussianCopula-data-generator-service/app/trained_models/
 *.safetensors
 *.pkl
 **/__pycache__/
+# Node workspace artifacts
+car-dealership-app/node_modules/
+car-dealership-app/client/node_modules/
+car-dealership-app/server/node_modules/
+car-dealership-app/client/dist/
+car-dealership-app/server/data/*.db
